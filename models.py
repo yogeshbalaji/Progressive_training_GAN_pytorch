@@ -28,7 +28,7 @@ def GBlock(res):
             nn.ConvTranspose2d(nz, nf(res-1), 4, 1, 0, bias=False),
             nn.BatchNorm2d(nf(res-1)),
             nn.ReLU(True),
-            nn.ConvTranspose2d(nf(res-1), nf(res-1), 4, 1, 0, bias=False),
+            nn.ConvTranspose2d(nf(res-1), nf(res-1), 3, 1, 1, bias=False),
             nn.BatchNorm2d(nf(res-1)),
             nn.ReLU(True)
         )
@@ -54,7 +54,7 @@ class Generator(nn.Module):
         super(Generator, self).__init__()
         
         self.upscale = nn.Upsample(scale_factor=2)
-        
+        self.final_act = nn.Tanh()
         self.block = []
         self.toRGB = []
         
@@ -77,20 +77,20 @@ class Generator(nn.Module):
         
         if res == 2:
             x = self.block[res-2](noise)
-            x = self.toRGB[res-2]
+            x = self.toRGB[res-2](x)
         else:
             y = self.toRGB[res-3](x)
             y = self.upscale(y)
             
             z = self.upscale(x)
             z = self.block[res-2](z)
-            z = self.toRGB[res-2]
+            z = self.toRGB[res-2](z)
             
             if alpha == 1:      # No fading
                 x = z
             else:               # Fading
                 x = (1-alpha)*y + alpha*z
-        
+        x = self.final_act(x)
         return x
         
 ##########################################################
@@ -128,7 +128,7 @@ class Discriminator(nn.Module):
         super(Discriminator, self).__init__()
         
         self.downscale = nn.AvgPool2d(2, 2)
-        
+        self.sigmoid = nn.Sigmoid()
         self.block = []
         self.fromRGB = []
         
@@ -163,8 +163,9 @@ class Discriminator(nn.Module):
             else:
                 x = self.block[i-2](x)
                 x = self.downscale(x)
+        x = self.sigmoid(x)
         
-        return x
+        return x.view(-1, 1).squeeze(1)
 
 
 ##########################################################

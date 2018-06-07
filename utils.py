@@ -15,3 +15,10 @@ def weights_init(m):
         m.weight.data.normal_(1.0, 0.02)
         m.bias.data.fill_(0)
 
+def disp_time(time_secs):
+	
+	hrs = int(time_secs/3600)
+	mins = int((time_secs - hrs*3600)/60)
+	secs = time_secs - hrs*3600 - mins*60
+	disp_str = '%d hrs, %d mins, %d secs' % (hrs, mins, secs)
+	return disp_str
